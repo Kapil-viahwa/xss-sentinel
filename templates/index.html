@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a1020">
+  <title>XSS Sentinel | Assessment Console</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="XSS Sentinel home"><span class="brand-mark">XS</span><span><strong>XSS Sentinel</strong><small>Assessment platform</small></span></a>
+      <div class="nav-label">WORKSPACE</div>
+      <a class="nav-item active" href="#overview"><span class="nav-icon">▦</span>Overview</a>
+      <a class="nav-item" href="#assessments"><span class="nav-icon">◈</span>Assessments</a>
+      <div class="sidebar-bottom"><span class="status-dot"></span><span>Local instance</span><span class="version">v0.1</span></div>
+    </aside>
+    <main class="main-content">
+      <header class="topbar"><div><div class="eyebrow">SECURITY OPERATIONS / WORKSPACE</div><h1>Assessment overview</h1></div><div class="topbar-right"><span class="scope-chip"><span class="status-dot"></span>Authorized scope only</span><button class="primary-button" id="new-assessment">＋ New assessment</button></div></header>
+      <section class="intro-row"><div><h2>Application security at a glance</h2><p>Discover your authorized application surface and track XSS validation progress.</p></div><div class="updated-label"><span class="pulse"></span><span id="refresh-label">Live database metrics</span></div></section>
+      <section class="metric-grid" id="metrics" aria-label="Assessment metrics">
+        <article class="metric-card"><div class="metric-heading">Applications assessed <span class="metric-icon blue">◈</span></div><div class="metric-value" data-metric="assessments">—</div><div class="metric-foot">All assessment records</div></article>
+        <article class="metric-card"><div class="metric-heading">URLs discovered <span class="metric-icon violet">⌁</span></div><div class="metric-value" data-metric="urls_discovered">—</div><div class="metric-foot">Same-origin pages crawled</div></article>
+        <article class="metric-card"><div class="metric-heading">Endpoints discovered <span class="metric-icon cyan">⇄</span></div><div class="metric-value" data-metric="endpoints_discovered">—</div><div class="metric-foot">Form actions inventoried</div></article>
+        <article class="metric-card"><div class="metric-heading">Injection points <span class="metric-icon amber">⌖</span></div><div class="metric-value" data-metric="injection_points">—</div><div class="metric-foot">Inputs identified, not yet tested</div></article>
+      </section>
+      <section class="status-grid">
+        <article class="status-card"><div class="status-top"><span class="status-symbol confirmed">✓</span><span class="status-caption">CONFIRMED XSS</span></div><div class="status-number" data-metric="confirmed_vulnerabilities">—</div><div class="status-note">Requires browser execution evidence</div></article>
+        <article class="status-card"><div class="status-top"><span class="status-symbol potential">◇</span><span class="status-caption">POTENTIAL FINDINGS</span></div><div class="status-number" data-metric="potential_vulnerabilities">—</div><div class="status-note">Awaiting validation</div></article>
+        <article class="status-card"><div class="status-top"><span class="status-symbol active-symbol">◷</span><span class="status-caption">ACTIVE ASSESSMENTS</span></div><div class="status-number" data-metric="active_assessments">—</div><div class="status-note">Currently crawling</div></article>
+        <article class="status-card"><div class="status-top"><span class="status-symbol blocked">⊘</span><span class="status-caption">WAF-BLOCKED TESTS</span></div><div class="status-number" data-metric="waf_blocked">—</div><div class="status-note">No active tests in this release</div></article>
+      </section>
+      <section class="panel" id="assessments">
+        <div class="panel-header"><div><h2>Recent assessments</h2><p>Assessment inventory and crawl coverage</p></div><button class="text-button" id="refresh">Refresh ↻</button></div>
+        <div class="table-wrap"><table><thead><tr><th>ASSESSMENT</th><th>TARGET ORIGIN</th><th>STATUS</th><th>URLS</th><th>INPUTS</th><th>FINDINGS</th><th></th></tr></thead><tbody id="assessment-rows"><tr><td colspan="7" class="empty-state">Loading assessment data…</td></tr></tbody></table></div>
+      </section>
+      <footer class="page-footer"><span>XSS Sentinel · Authorized testing only</span><span>Metrics reflect persisted assessment data</span></footer>
+    </main>
+  </div>
+  <dialog id="assessment-dialog">
+    <form id="assessment-form" method="dialog">
+      <div class="dialog-heading"><div><div class="eyebrow">NEW AUTHORIZED ASSESSMENT</div><h2>Configure application scope</h2></div><button class="close-button" type="button" id="close-dialog" aria-label="Close">×</button></div>
+      <p class="dialog-copy">The initial crawler makes read-only requests and stays within this exact origin. It does not submit forms or run test payloads.</p>
+      <label>Assessment name<input name="name" required maxlength="200" placeholder="Production portal review"></label>
+      <label>Target URL<input name="target_url" type="url" required placeholder="https://app.example.com/"></label>
+      <div class="form-grid"><label>Maximum depth<input name="max_depth" type="number" min="0" max="10" value="3" required></label><label>Maximum requests<input name="max_requests" type="number" min="1" max="1000" value="100" required></label><label>Concurrency<input name="concurrency" type="number" min="1" max="10" value="4" required></label></div>
+      <label class="authorization-check"><input name="authorization_confirmed" type="checkbox" required><span>I have explicit authorization to assess this target and have verified the scope.</span></label>
+      <div class="form-error" id="form-error" role="alert"></div>
+      <div class="dialog-actions"><button type="button" class="secondary-button" id="cancel-dialog">Cancel</button><button type="submit" class="primary-button">Create assessment</button></div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

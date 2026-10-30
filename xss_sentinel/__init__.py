@@ -1,0 +1,1 @@
+"""XSS Sentinel assessment platform."""
