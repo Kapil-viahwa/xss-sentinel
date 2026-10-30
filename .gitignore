@@ -5,3 +5,6 @@ __pycache__/
 .pytest_cache/
 .coverage
 .env
+
+benchmarks/expectedresults-*.csv
+benchmark-score.json
