@@ -1,12 +1,18 @@
 import unittest
 
-from xss_sentinel.main import _cvss_estimate, _csv_safe, _pdf_text, _report_pdf
+from xss_sentinel.main import _cvss_estimate, _csv_safe, _display_target, _pdf_text, _report_pdf
 
 
 class ReportHelpersTest(unittest.TestCase):
     def test_csv_formula_prefix_is_neutralized(self):
         self.assertEqual(_csv_safe("=1+1"), "'=1+1")
         self.assertEqual(_csv_safe("ordinary"), "ordinary")
+
+    def test_display_target_redacts_query_values(self):
+        self.assertEqual(
+            _display_target("https://example.test/path?token=secret&name=Alice"),
+            "https://example.test/path?token=%3Credacted%3E&name=%3Credacted%3E",
+        )
 
     def test_xss_cvss_estimate_discloses_its_vector_and_assumptions(self):
         estimate = _cvss_estimate("reflected_xss")

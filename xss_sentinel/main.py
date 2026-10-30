@@ -77,7 +77,7 @@ class AssessmentCreate(BaseModel):
 
 def _display_target(value: str) -> str:
     parsed = urlsplit(value)
-    safe_query = urlencode((name, "<redacted>") for name, _ in parse_qsl(parsed.query, keep_blank_values=True))
+    safe_query = urlencode([(name, "<redacted>") for name, _ in parse_qsl(parsed.query, keep_blank_values=True)])
     return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, safe_query, ""))
 
 
