@@ -13,5 +13,5 @@ jobs:
         with:
           python-version: "3.11"
       - run: python -m pip install -r requirements.txt
-      - run: python -m compileall -q xss_sentinel tests
+      - run: python -m compileall -q run_local.py xss_sentinel tests
       - run: python -m unittest discover -s tests

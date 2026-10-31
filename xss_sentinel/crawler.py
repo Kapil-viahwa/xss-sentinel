@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from collections import deque
 from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
 
@@ -16,6 +17,22 @@ from .models import Assessment, CrawlFrontier, CrawlJob, InjectionPoint, JavaScr
 
 SENSITIVE_FIELD_PARTS = ("password", "passwd", "token", "secret", "authorization", "auth", "csrf", "xsrf", "api_key", "apikey")
 MAX_HTML_BYTES = 2_000_000
+logger = logging.getLogger(__name__)
+
+
+class ScopeValidationError(ValueError):
+    pass
+
+
+def _crawl_error_type(exc: Exception) -> str:
+    error_text = str(exc).lower()
+    if "frontier" in error_text or "xss_sentinel_frontier_key" in error_text:
+        return "frontier_key_error"
+    if isinstance(exc, ScopeValidationError):
+        return "scope_error"
+    if isinstance(exc, ValueError):
+        return "setup_error"
+    return type(exc).__name__
 
 
 def _origin(url: str) -> tuple[str, str, int] | None:
@@ -171,7 +188,7 @@ async def crawl_assessment(assessment_id: int, auth_profile: dict | None = None,
         start_url = assessment.target_url
         allowed_origin = _origin(start_url)
         if allowed_origin is None:
-            raise ValueError("invalid_scope")
+            raise ScopeValidationError("Target URL must be an absolute HTTP(S) URL without embedded credentials.")
 
         queue = deque()
         seen_keys: set[str] = set()
@@ -390,15 +407,16 @@ async def crawl_assessment(assessment_id: int, auth_profile: dict | None = None,
         session.commit()
         raise
     except Exception as exc:
+        error_type = _crawl_error_type(exc)
+        # Keep exception details in the local worker log; the dashboard/API exposes only the category.
+        logger.exception("Crawl failed for assessment %s, job %s (%s)", assessment_id, job_id, error_type)
         session.rollback()
         job = session.get(CrawlJob, job_id) if job_id is not None else None
         owns_job = job_id is None or (job is not None and (worker_id is None or job.lease_owner == worker_id))
         assessment = session.get(Assessment, assessment_id)
         if owns_job and assessment is not None:
             assessment.status = "failed"
-            error_text = str(exc).lower()
-            assessment.error_type = ("frontier_key_error" if "frontier" in error_text or "xss_sentinel_frontier_key" in error_text
-                                     else "scope_error" if isinstance(exc, ValueError) else type(exc).__name__)
+            assessment.error_type = error_type
             assessment.completed_at = utc_now()
         if owns_job and job is not None:
             job.status = "failed"

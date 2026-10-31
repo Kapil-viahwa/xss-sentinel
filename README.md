@@ -2,6 +2,8 @@
 
 XSS Sentinel is an authorized web-application assessment platform focused on mapping attack surface and validating XSS with browser evidence. It is an evolving assessment tool, not a production-complete enterprise scanner; reflection alone is never reported as XSS.
 
+For step-by-step local, Docker, lab, and test setup, see the [installation and setup guide](INSTALLATION.md).
+
 ## Current capabilities
 
 - Create assessments only after explicit authorization; crawl the exact target origin with bounded depth, request count, and concurrency.
@@ -23,10 +25,9 @@ Use Python 3.11 or newer:
 2. Activate the environment.
 3. `pip install -r requirements.txt`
 4. `playwright install chromium`
-5. Generate and export a persistent frontier-encryption key: `export XSS_SENTINEL_FRONTIER_KEY="$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"`.
-6. In one terminal, run `uvicorn xss_sentinel.main:app --reload`.
-7. In another terminal, run `python -m xss_sentinel.worker` with the same database URL and frontier key.
-8. Open `http://127.0.0.1:8000`.
+5. Generate a frontier-encryption key once, save it securely, and export the same value whenever you start the app: `export XSS_SENTINEL_FRONTIER_KEY='paste-your-saved-key-here'`.
+6. Run `python run_local.py` to start the dashboard and worker together with the same environment and database.
+7. Open `http://127.0.0.1:8000`. Use only targets you are authorized to assess.
 
 The local default database is SQLite. Run one or more workers against the same database. For multi-host workers, use a shared PostgreSQL database; the included Compose stack supplies one. Frontier URLs and discovery sources are encrypted at rest and require the same stable `XSS_SENTINEL_FRONTIER_KEY` across app and worker instances. Do not rotate this key while jobs are active or pending. Pending and completed frontier items are checkpointed; a crashed worker retries in-flight URLs at least once.
 

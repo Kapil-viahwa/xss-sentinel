@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import logging
 import os
 import socket
 import uuid
@@ -16,6 +17,7 @@ from .crawler import crawl_assessment
 LEASE_SECONDS = 90
 HEARTBEAT_SECONDS = 20
 MAX_JOB_ATTEMPTS = 3
+logger = logging.getLogger(__name__)
 
 
 def _claim_job(worker_id: str) -> tuple[int, int] | None:
@@ -110,6 +112,7 @@ async def _execute_job(job_id: int, assessment_id: int, worker_id: str) -> None:
     try:
         auth_profile = get_auth_profile(profile_name, target_url)
     except ValueError as exc:
+        logger.exception("Authentication profile rejected for assessment %s", assessment_id)
         with SessionLocal() as session:
             job = session.get(CrawlJob, job_id)
             assessment = session.get(Assessment, assessment_id)
@@ -137,6 +140,7 @@ async def _execute_job(job_id: int, assessment_id: int, worker_id: str) -> None:
 
 async def run_worker(poll_interval: float = 1.0, once: bool = False) -> None:
     worker_id = f"{socket.gethostname()}-{os.getpid()}-{uuid.uuid4().hex[:8]}"
+    logger.info("Worker started (%s)", worker_id)
     while True:
         claimed = _claim_job(worker_id)
         if claimed is None:
@@ -144,6 +148,7 @@ async def run_worker(poll_interval: float = 1.0, once: bool = False) -> None:
                 return
             await asyncio.sleep(poll_interval)
             continue
+        logger.info("Worker claimed job %s for assessment %s", claimed[0], claimed[1])
         await _execute_job(*claimed, worker_id)
         if once:
             return
@@ -154,6 +159,7 @@ def main() -> None:
     parser.add_argument("--once", action="store_true", help="claim at most one job and exit")
     parser.add_argument("--poll-interval", type=float, default=1.0)
     args = parser.parse_args()
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     asyncio.run(run_worker(max(0.1, args.poll_interval), args.once))
 
 
